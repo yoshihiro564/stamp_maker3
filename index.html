@@ -99,8 +99,18 @@ input[type=color]{width:40px;height:32px;border:1px solid var(--border);border-r
 .batch-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:16px}
 .batch-section h3{font-size:0.9rem;margin-bottom:10px;color:var(--text-muted)}
 .batch-row{display:flex;gap:10px;align-items:flex-start}
-.batch-row textarea{flex:1;height:80px;resize:vertical;font-size:0.8rem}
+.batch-row textarea{flex:1;height:140px;resize:vertical;font-size:0.8rem}
 .batch-actions{display:flex;flex-direction:column;gap:6px}
+
+/* ===== Per-stamp random font ===== */
+.btn-rf{background:none;border:1px solid var(--border);border-radius:6px;padding:3px 7px;cursor:pointer;font-size:0.85rem;flex-shrink:0;line-height:1;color:var(--text);transition:border-color 0.15s}
+.btn-rf:hover{border-color:var(--accent)}
+.btn-rf.has-override{border-color:var(--accent);background:rgba(168,85,247,0.18)}
+.font-badge{position:absolute;bottom:4px;left:4px;right:4px;background:rgba(0,0,0,0.72);color:#fff;font-size:0.62rem;padding:2px 6px;border-radius:4px;display:none;align-items:center;gap:4px}
+.font-badge span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.font-badge button{background:none;border:none;color:#aaa;cursor:pointer;font-size:0.75rem;padding:0;line-height:1}
+.font-badge button:hover{color:#fff}
+.canvas-wrap{position:relative}
 
 /* ===== Action Bar ===== */
 .action-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
@@ -113,8 +123,8 @@ input[type=color]{width:40px;height:32px;border:1px solid var(--border);border-r
 .stamps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
 .stamp-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color 0.15s}
 .stamp-card:hover{border-color:var(--border)}
-.stamp-card-header{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border-bottom:1px solid var(--border)}
-.stamp-num{font-size:0.75rem;font-weight:700;color:var(--accent);min-width:28px}
+.stamp-card-header{display:flex;align-items:flex-start;gap:6px;padding:7px 8px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.stamp-num{font-size:0.75rem;font-weight:700;color:var(--accent);min-width:26px;padding-top:3px}
 .stamp-card-header textarea{flex:1;background:transparent;border:none;color:var(--text);font-size:0.85rem;resize:none;height:42px;padding:0;line-height:1.4;font-family:inherit}
 .stamp-card-header textarea:focus{outline:none}
 .stamp-card-header textarea::placeholder{color:var(--text-muted)}
@@ -177,8 +187,7 @@ footer{text-align:center;padding:20px;color:var(--text-muted);font-size:0.75rem;
   <div id="settingsBody">
     <div class="tabs">
       <button class="tab-btn active" data-tab="tab-text">🔤 文字</button>
-      <button class="tab-btn" data-tab="tab-fx">✨ 効果</button>
-      <button class="tab-btn" data-tab="tab-bg">🎨 背景</button>
+      <button class="tab-btn" data-tab="tab-fx">✨ 効果・背景</button>
     </div>
 
     <!-- Tab: 文字 -->
@@ -263,7 +272,7 @@ footer{text-align:center;padding:20px;color:var(--text-muted);font-size:0.75rem;
       </div>
     </div>
 
-    <!-- Tab: 効果 -->
+    <!-- Tab: 効果・背景（統合） -->
     <div class="tab-panel" id="tab-fx">
       <div class="settings-grid">
 
@@ -313,15 +322,9 @@ footer{text-align:center;padding:20px;color:var(--text-muted);font-size:0.75rem;
           </div>
         </div>
 
-      </div>
-    </div>
-
-    <!-- Tab: 背景 -->
-    <div class="tab-panel" id="tab-bg">
-      <div class="settings-grid">
         <div class="setting-group">
-          <label>背景タイプ</label>
-          <div style="display:flex;flex-direction:column;gap:8px">
+          <label style="font-size:0.9rem;font-weight:600;color:var(--text)">背景</label>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
             <label style="color:var(--text);display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.85rem">
               <input type="radio" name="bgMode" value="transparent" checked id="rBgTransparent"> 透明（推奨）
             </label>
@@ -337,6 +340,7 @@ footer{text-align:center;padding:20px;color:var(--text-muted);font-size:0.75rem;
             <div class="color-presets" id="bgColorPresets" style="margin-top:8px"></div>
           </div>
         </div>
+
       </div>
     </div>
 
@@ -462,33 +466,53 @@ function hslToHex(h,s,l) {
   return '#'+[r,g,b].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join('');
 }
 
-// Japanese-aware text wrap with kinsoku
-const NO_START = new Set('、。，．・：；？！）〕］｝〉》」』】〙〗ヽヾーァィゥェォッャュョヮぁぃぅぇぉっゃゅょ');
+// ===== Japanese-aware text wrap (行頭・行末禁則) =====
+const NO_START = new Set('、。，．・：；？！）〕］｝〉》」』】〙〗ヽヾーァィゥェォッャュョヮぁぃぅぇぉっゃゅょ…‥〟');
+const NO_END   = new Set('（〔［｛〈《「『【〘〖');
 
 function wrapText(ctx, text, maxW) {
   const lines = [];
   for (const para of text.split('\n')) {
     if (!para) { lines.push(''); continue; }
     let line = '';
-    for (let i = 0; i < para.length; i++) {
+    let i = 0;
+    while (i < para.length) {
       const c = para[i];
       const test = line + c;
-      if (ctx.measureText(test).width <= maxW || !line) {
+      const w = ctx.measureText(test).width;
+
+      if (w <= maxW) {
         line = test;
+        i++;
       } else {
+        if (!line) {
+          // 1文字でも幅超過なら強制追加（フォールバック）
+          lines.push(c);
+          i++;
+          continue;
+        }
         if (NO_START.has(c)) {
-          line += c; // kinsoku: append prohibited start-of-line char
+          // 行頭禁則：禁則文字を現行末に追加してから改行
+          line += c;
+          i++;
           lines.push(line);
           line = '';
+        } else if (NO_END.has(line[line.length - 1]) && line.length > 1) {
+          // 行末禁則：行末の開き括弧を次行へ送る
+          const moved = line[line.length - 1];
+          lines.push(line.slice(0, -1));
+          line = moved + c;
+          i++;
         } else {
           lines.push(line);
           line = c;
+          i++;
         }
       }
     }
     if (line) lines.push(line);
   }
-  return lines.filter((_,i,a)=>!(i===0&&_===''));
+  return lines;
 }
 
 // ===== Core Render =====
@@ -506,25 +530,34 @@ async function renderStamp(canvas, text, cfg) {
   const txt = (text || '').trim();
   if (!txt) return;
 
-  // Ensure font loaded
-  const fontSpec = `${cfg.weight} 24px "${cfg.font}"`;
-  if (!document.fonts.check(fontSpec)) {
-    try { await document.fonts.load(fontSpec); } catch(e) {}
+  // フォントを確実にロードしてから計測（未ロードだとフォールバックフォントで測定されてしまう）
+  const fontTestSpec = `${cfg.weight} 72px "${cfg.font}"`;
+  if (!document.fonts.check(fontTestSpec)) {
+    try { await document.fonts.load(fontTestSpec); } catch(e) {}
   }
 
   const PAD = cfg.padding;
-  const availW = STAMP_W - PAD * 2;
-  const availH = STAMP_H - PAD * 2;
+  // ストロークが文字境界を外側に広げるぶんを availW から引く
+  const strokePad = cfg.stroke.on ? cfg.stroke.width : 0;
+  const availW = STAMP_W - (PAD + strokePad) * 2;
+  const availH = STAMP_H - (PAD + strokePad) * 2;
   const LHR = cfg.lineHeight;
+
+  // 計測用サンプル文字列
+  const measureRef = txt.replace(/\n/g, '').substring(0, 20) || 'あいうAg';
 
   let fontSize, lines;
 
   if (cfg.sizeAuto) {
     outer:
-    for (let sz = 240; sz >= 12; sz -= (sz > 28 ? 4 : 1)) {
+    for (let sz = 240; sz >= 12; sz -= (sz > 32 ? 4 : 1)) {
       ctx.font = `${cfg.weight} ${sz}px "${cfg.font}"`;
       const wrapped = wrapText(ctx, txt, availW);
-      const totalH = wrapped.length * sz * LHR;
+      // actualBoundingBox で実グリフ高さを推定（フォールバック付き）
+      const mm = ctx.measureText(measureRef);
+      const asc = mm.actualBoundingBoxAscent  > 0 ? mm.actualBoundingBoxAscent  : sz * 0.80;
+      const dsc = mm.actualBoundingBoxDescent > 0 ? mm.actualBoundingBoxDescent : sz * 0.15;
+      const totalH = asc + dsc + Math.max(0, wrapped.length - 1) * sz * LHR;
       if (totalH <= availH) { fontSize = sz; lines = wrapped; break outer; }
     }
     if (!lines) {
@@ -539,23 +572,39 @@ async function renderStamp(canvas, text, cfg) {
   }
 
   ctx.font = `${cfg.weight} ${fontSize}px "${cfg.font}"`;
-  ctx.textBaseline = 'top';
+  // alphabetic baseline で actualBoundingBox を使い、実グリフに基づく正確な縦位置を算出
+  ctx.textBaseline = 'alphabetic';
   ctx.textAlign = cfg.align === 'left' ? 'left' : cfg.align === 'right' ? 'right' : 'center';
 
+  const mm = ctx.measureText(measureRef);
+  const asc = mm.actualBoundingBoxAscent  > 0 ? mm.actualBoundingBoxAscent  : fontSize * 0.80;
+  const dsc = mm.actualBoundingBoxDescent > 0 ? mm.actualBoundingBoxDescent : fontSize * 0.15;
+
   const lineH = fontSize * LHR;
-  const totalH = lines.length * lineH;
+  // 実グリフが占める視覚的な総高さ（行間込み）
+  const totalVisualH = asc + dsc + Math.max(0, lines.length - 1) * lineH;
 
-  let startY;
-  if (cfg.vAlign === 'top')    startY = PAD;
-  else if (cfg.vAlign === 'bottom') startY = STAMP_H - PAD - totalH;
-  else startY = (STAMP_H - totalH) / 2;
+  let firstBaseline; // 1行目のベースライン Y 座標
+  if (cfg.vAlign === 'top') {
+    firstBaseline = PAD + strokePad + asc;
+  } else if (cfg.vAlign === 'bottom') {
+    firstBaseline = STAMP_H - PAD - strokePad - dsc - Math.max(0, lines.length - 1) * lineH;
+  } else {
+    // 実グリフ上端が視覚的に中央になるよう配置
+    firstBaseline = (STAMP_H - totalVisualH) / 2 + asc;
+    // パディング下限クランプ
+    firstBaseline = Math.max(PAD + strokePad + asc, firstBaseline);
+  }
 
-  const x = cfg.align === 'left' ? PAD : cfg.align === 'right' ? STAMP_W - PAD : STAMP_W / 2;
+  const x = cfg.align === 'left' ? PAD + strokePad
+           : cfg.align === 'right' ? STAMP_W - PAD - strokePad
+           : STAMP_W / 2;
 
   lines.forEach((line, i) => {
-    const y = startY + i * lineH;
+    const baseline = firstBaseline + i * lineH;
+    if (!line) return; // 空行はスキップ（basline位置は進む）
 
-    // Stroke (no shadow)
+    // ストローク（影なし）
     if (cfg.stroke.on && cfg.stroke.width > 0) {
       ctx.save();
       ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
@@ -563,25 +612,59 @@ async function renderStamp(canvas, text, cfg) {
       ctx.lineWidth = cfg.stroke.width * 2;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
-      ctx.strokeText(line, x, y);
+      ctx.strokeText(line, x, baseline);
       ctx.restore();
     }
 
-    // Fill + shadow
+    // 塗り + 影
     ctx.shadowColor   = cfg.shadow.on ? hexToRgba(cfg.shadow.color, cfg.shadow.opacity) : 'transparent';
     ctx.shadowBlur    = cfg.shadow.on ? cfg.shadow.blur : 0;
     ctx.shadowOffsetX = cfg.shadow.on ? cfg.shadow.x : 0;
     ctx.shadowOffsetY = cfg.shadow.on ? cfg.shadow.y : 0;
     ctx.fillStyle     = cfg.textColor;
-    ctx.fillText(line, x, y);
+    ctx.fillText(line, x, baseline);
   });
 
   ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
 }
 
+// ===== Per-stamp font overrides =====
+const stampFontOverrides = new Array(STAMP_COUNT).fill(null);
+
+function randStampFont(idx) {
+  const f = FONTS[Math.floor(Math.random() * FONTS.length)];
+  stampFontOverrides[idx] = f.name;
+  const btn = document.querySelector(`.btn-rf[data-idx="${idx}"]`);
+  if (btn) btn.classList.add('has-override');
+  const badge = document.getElementById(`fb-${idx}`);
+  if (badge) {
+    badge.style.display = 'flex';
+    badge.querySelector('span').textContent = f.label.split('（')[0];
+  }
+  renderOne(idx);
+}
+
+function clearStampFont(idx) {
+  stampFontOverrides[idx] = null;
+  const btn = document.querySelector(`.btn-rf[data-idx="${idx}"]`);
+  if (btn) btn.classList.remove('has-override');
+  const badge = document.getElementById(`fb-${idx}`);
+  if (badge) badge.style.display = 'none';
+  renderOne(idx);
+}
+
 function getConfig(index) {
-  const c = {
-    font: S.font, weight: S.weight,
+  const fontOverride = stampFontOverrides[index];
+  let font = fontOverride || S.font;
+  let weight = S.weight;
+  if (fontOverride) {
+    const fd = FONTS.find(f => f.name === fontOverride);
+    if (fd && !fd.w.includes(S.weight)) {
+      weight = fd.w.reduce((a, b) => Math.abs(b - S.weight) < Math.abs(a - S.weight) ? b : a);
+    }
+  }
+  return {
+    font, weight,
     textColor: S.randColorEach ? randomVibrantColor() : S.textColor,
     sizeAuto: S.sizeAuto, fontSize: S.fontSize,
     align: S.align, vAlign: S.vAlign,
@@ -589,7 +672,6 @@ function getConfig(index) {
     shadow: {...S.shadow}, stroke: {...S.stroke},
     bgSolid: S.bgSolid, bgColor: S.bgColor,
   };
-  return c;
 }
 
 // ===== Stamp Cards =====
@@ -604,9 +686,14 @@ function createStampCards() {
       <div class="stamp-card-header">
         <span class="stamp-num">${String(i+1).padStart(2,'0')}</span>
         <textarea placeholder="テキストを入力" rows="2" data-idx="${i}"></textarea>
+        <button class="btn-rf" data-idx="${i}" title="このスタンプのフォントをランダムに変更" onclick="randStampFont(${i})">🎲</button>
       </div>
       <div class="canvas-wrap checker">
         <canvas data-idx="${i}"></canvas>
+        <div class="font-badge" id="fb-${i}">
+          <span></span>
+          <button onclick="clearStampFont(${i})" title="フォントをリセット">✕</button>
+        </div>
       </div>
       <div class="stamp-card-footer">
         <button class="btn btn-secondary btn-sm" onclick="renderOne(${i})">▶ 更新</button>
